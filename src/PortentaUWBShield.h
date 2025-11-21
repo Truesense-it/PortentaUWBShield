@@ -8,6 +8,7 @@
 #include "uwbapps/UWBRangingController.hpp"
 #include "uwbapps/UWBRangingOneToMany.hpp"
 #include "uwbapps/UWBMultiSessionAnchor.hpp"
+#include "uwbapps/UWBMultiSessionTag.hpp"
 #include "uwbapps/UWBUltdoaAnchor.hpp"
 #include "uwbapps/UWBUltdoaSyncAnchor.hpp"
 #endif
