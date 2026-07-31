@@ -9,12 +9,14 @@
 
 class  UWBRangingControlee:public UWBSession {
 
-public: 
-	    
+public:
+
 	UWBRangingControlee(uint32_t session_ID, UWBMacAddress srcAddr, UWBMacAddress dstAddr)
 	{
 		sessionID(session_ID);
 		sessionType(uwb::SessionType::RANGING);
+
+		// Ranging parameters
 		rangingParams.deviceRole(uwb::DeviceRole::RESPONDER);
 		rangingParams.deviceType(uwb::DeviceType::CONTROLEE);
 		rangingParams.multiNodeMode(uwb::MultiNodeMode::UNICAST);
@@ -22,21 +24,21 @@ public:
 		rangingParams.scheduledMode(uwb::ScheduledMode::TIME_SCHEDULED);
 		rangingParams.macAddrMode((uint8_t)uwb::MacAddressMode::SHORT);
 		rangingParams.deviceMacAddr(srcAddr);
-		
-		
-		
-	    appParams.destinationMacAddr(dstAddr);
-	    appParams.frameConfig(uwb::RfFrameConfig::SP3);
-		appParams.slotPerRR(25);
-		appParams.rangingDuration(200);
+
+		// Application parameters - must match controller exactly
+		appParams.noOfControlees(1);              // Explicit: 1 controlee
+		appParams.destinationMacAddr(dstAddr);
+		appParams.frameConfig(uwb::RfFrameConfig::SP3);
 		appParams.stsConfig(uwb::StsConfig::StaticSts);
 		appParams.stsSegments(1);
-		appParams.sfdId(2);
-		appParams.preambleCodeIndex(10);	
-		
-   
-	}
-	
+		appParams.sfdId(2);                       // 64-bit SFD for better accuracy
+		appParams.preambleCodeIndex(10);
+		appParams.slotDuration(2400);             // 2400 RSTU = 2ms per slot
+		appParams.slotPerRR(25);                  // 25 slots per ranging round
+		appParams.rangingDuration(200);           // 200ms ranging interval
+
+}
+
 };
 
-#endif
+#endif/* UWBRANGINGCONTROLEE */
