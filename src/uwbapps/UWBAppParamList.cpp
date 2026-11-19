@@ -2,6 +2,7 @@
 // Copyright (c) 2025 Truesense Srl
 
 #include "UWBAppParamList.hpp"
+#include <string.h>
 
 uwb::AppConfig buildScalar(uwb::AppConfigId id, uint32_t val)
 {
@@ -100,7 +101,12 @@ bool UWBAppParamList::uplinkTdoaTimestamp(uint8_t mode)
 
 bool UWBAppParamList::tdoaDeviceId(uint8_t value[], uint8_t length)
 {
-     return addOrUpdateParam(buildArray(uwb::AppConfigId::UlTdoaDeviceId, value, length));
+     if (length > MAX_TDOA_DEVICE_ID_SIZE) {
+          return false;
+     }
+
+     memcpy(tdoaDeviceIdData, value, length);
+     return addOrUpdateParam(buildArray(uwb::AppConfigId::UlTdoaDeviceId, tdoaDeviceIdData, length));
 }
 
 bool UWBAppParamList::tdoaTxInterval(uint32_t interval)
@@ -120,11 +126,56 @@ bool UWBAppParamList::noOfControlees(uint8_t number)
     
 bool UWBAppParamList::destinationMacAddr(UWBMacAddress &addr)
 {
-    return addOrUpdateParam(buildArray(uwb::AppConfigId::PeerAddress, addr.getData(), addr.getSize()));
+    return setDestinationMacAddr(addr.getData(), addr.getSize());
 }
 
 
 bool UWBAppParamList::destinationMacAddr(UWBMacAddressList addrs)
 {
-    return addOrUpdateParam(buildArray(uwb::AppConfigId::PeerAddress, addrs.getAllData(), addrs.size() * (uint8_t)addrs.macTypeSize()));
+    uint32_t byteLength = addrs.size() * (uint32_t)addrs.macTypeSize();
+    if (byteLength > MAX_PEER_ADDRESS_DATA_SIZE) {
+        return false;
+    }
+    return setDestinationMacAddr(addrs.getAllData(), (uint8_t)byteLength);
+}
+
+bool UWBAppParamList::setDestinationMacAddr(uint8_t *addrData, uint8_t length)
+{
+    if (length > MAX_PEER_ADDRESS_DATA_SIZE) {
+        return false;
+    }
+
+    memcpy(peerAddressData, addrData, length);
+    return addOrUpdateParam(buildArray(uwb::AppConfigId::PeerAddress, peerAddressData, length));
+}
+
+static void rebindRange(uwb::AppConfig &entry, const uint8_t *fromBase, uint8_t *toBase, size_t size)
+{
+    uintptr_t p = (uintptr_t)entry.param_value.au8.param_value;
+    uintptr_t from = (uintptr_t)fromBase;
+    if (p >= from && p < from + size) {
+        entry.param_value.au8.param_value = toBase + (p - from);
+    }
+}
+
+void UWBAppParamList::rebindOwnedArrays(const UWBAppParamList &source)
+{
+    uwb::AppConfig *entries = getParamsList();
+    for (unsigned int i = 0; i < getSize(); i++) {
+        if (entries[i].param_type == uwb::AppParamType::ARRAY_U8) {
+            rebindRange(entries[i], source.peerAddressData, peerAddressData, MAX_PEER_ADDRESS_DATA_SIZE);
+            rebindRange(entries[i], source.tdoaDeviceIdData, tdoaDeviceIdData, MAX_TDOA_DEVICE_ID_SIZE);
+        }
+    }
+}
+
+UWBAppParamList &UWBAppParamList::operator=(const UWBAppParamList &other)
+{
+    if (this != &other) {
+        UWBAppParamsList::operator=(other);
+        memcpy(peerAddressData, other.peerAddressData, sizeof(peerAddressData));
+        memcpy(tdoaDeviceIdData, other.tdoaDeviceIdData, sizeof(tdoaDeviceIdData));
+        rebindOwnedArrays(other);
+    }
+    return *this;
 }

@@ -11,7 +11,35 @@ uwb::AppConfig buildScalar(uwb::AppConfigId id, uint32_t val);
 uwb::AppConfig buildArray(uwb::AppConfigId id, uint8_t *val, uint8_t length);
 class UWBAppParamList : public UWBAppParamsList<uwb::AppConfig, uwb::AppConfigId, uwb::AppParamType, uwb::AppParamValue>
 {
+private:
+     /*
+      * Array parameters are sent to the chip only in UWBSession::init(), so the
+      * list keeps its own copy of their bytes instead of a pointer to the
+      * caller's data, which may no longer exist by then.
+      *
+      * No copy constructor on purpose: the precompiled HAL receives this list
+      * by value and relies on it being trivially copyable. A copy made that way
+      * points at the source's buffers, which is safe while the source exists
+      * (the HAL call in init()). Copies of a whole UWBSession are re-pointed by
+      * UWBSession's copy constructor; assignment re-points here.
+      */
+     static const uint8_t MAX_PEER_ADDRESS_DATA_SIZE = 80; // 10 addresses of 8 bytes
+     static const uint8_t MAX_TDOA_DEVICE_ID_SIZE = 16;
+     uint8_t peerAddressData[MAX_PEER_ADDRESS_DATA_SIZE];
+     uint8_t tdoaDeviceIdData[MAX_TDOA_DEVICE_ID_SIZE];
+     bool setDestinationMacAddr(uint8_t *addrData, uint8_t length);
+
 public:
+     UWBAppParamList() = default;
+     UWBAppParamList(const UWBAppParamList &other) = default; // stays trivial, see above
+     UWBAppParamList &operator=(const UWBAppParamList &other);
+
+     /**
+      * @brief Point the array entries copied from @p source at this list's own
+      * buffers. Used after copying a list (assignment, UWBSession copy).
+      */
+     void rebindOwnedArrays(const UWBAppParamList &source);
+
      /**
       * @brief Set the UWB channel. Accepted values are 5 (6.5Ghz) and 9 (8 Ghz)
       *
@@ -339,11 +367,13 @@ public:
      /**
       * @brief set an identifier to an uplink TDoA tag
       *
+      * The bytes are copied, so @p value does not need to outlive the call.
+      *
       * @param value array of bytes
-      * @param length length of the array
+      * @param length length of the array, at most 16
       *
       * @return true     success
-      * @return false    fail
+      * @return false    fail (length too long or list full)
       */
      bool tdoaDeviceId(uint8_t value[], uint8_t length);
 
@@ -389,12 +419,16 @@ public:
     /**
      * @brief Set the Destination Mac Address for the session
      * 
+     * The address bytes are copied, so @p addr does not need to outlive the call.
+     *
      * @param addr 
      */
     bool destinationMacAddr(UWBMacAddress &addr);
     
         /**
      * @brief Set the Destination Mac Addresses for multicast session
+     *
+     * The address bytes are copied into this list.
      *
      * @param addrs List of destination MAC addresses
      */

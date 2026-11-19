@@ -23,6 +23,18 @@ UWBSession::UWBSession()
     
 }
 
+UWBSession::UWBSession(const UWBSession &other)
+    : rangingParams(other.rangingParams),
+      appParams(other.appParams),
+      vendorParams(other.vendorParams),
+      sessID(other.sessID),
+      sessionHdl(other.sessionHdl),
+      type(other.type),
+      isActive(other.isActive)
+{
+    appParams.rebindOwnedArrays(other.appParams);
+}
+
 
 void UWBSession::sessionID(uint32_t id)
 {
