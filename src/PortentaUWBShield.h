@@ -11,4 +11,6 @@
 #include "uwbapps/UWBMultiSessionTag.hpp"
 #include "uwbapps/UWBUltdoaAnchor.hpp"
 #include "uwbapps/UWBUltdoaSyncAnchor.hpp"
+#include "uwbapps/UWBInbandDataRx.hpp"
+#include "uwbapps/UWBInbandDataTx.hpp"
 #endif
