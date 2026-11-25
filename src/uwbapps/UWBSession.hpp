@@ -111,6 +111,12 @@ public:
      */
     UWBSession();
     
+    /**
+     * @brief Copy a session. The copy's parameter list points at its own
+     * copies of the array parameters, not at the original's.
+     */
+    UWBSession(const UWBSession &other);
+
     uint32_t sessionID();
     /**
      * @brief Set the Session ID
