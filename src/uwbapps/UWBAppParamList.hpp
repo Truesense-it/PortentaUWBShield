@@ -17,11 +17,17 @@ private:
       * list keeps its own copy of their bytes instead of a pointer to the
       * caller's data, which may no longer exist by then.
       *
-      * No copy constructor on purpose: the precompiled HAL receives this list
-      * by value and relies on it being trivially copyable. A copy made that way
-      * points at the source's buffers, which is safe while the source exists
-      * (the HAL call in init()). Copies of a whole UWBSession are re-pointed by
-      * UWBSession's copy constructor; assignment re-points here.
+      * The copy constructor and the destructor stay trivial on purpose: the
+      * precompiled HAL receives this list by value, and with a trivial copy
+      * constructor and destructor the list is passed as a plain byte copy.
+      * That copy points at the source's buffers. The HAL reads it only during
+      * the call in UWBSession::init(), while the source exists.
+      *
+      * operator= and UWBSession's copy constructor re-point the buffers of the
+      * copy at its own.
+      *
+      * Known limit: a plain copy (UWBAppParamList b(a);) still points at a's
+      * buffers, so b must not be used after a is gone.
       */
      static const uint8_t MAX_PEER_ADDRESS_DATA_SIZE = 80; // 10 addresses of 8 bytes
      static const uint8_t MAX_TDOA_DEVICE_ID_SIZE = 16;
