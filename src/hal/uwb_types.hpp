@@ -7,7 +7,7 @@
 #include <vector>
 #include <string.h>
 #include <stddef.h>
-//#include "uwb_iot_ftr.h"
+#include "uwb_archive_ftr.h"   // feature switches the precompiled archive was built with (DeviceInfo/DeviceCapabilities layout)
 
 namespace uwb {
 
@@ -847,6 +847,11 @@ typedef struct DeviceCapabilities_t {
     uint8_t psduLengthSupport;
 #endif //UWBIOT_UWBD_SR1XXT_SR2XXT
 } DeviceCapabilities;
+
+// The precompiled archive writes these structs into the caller's memory (getDeviceInfo(),
+// getDeviceCapability()). If a build switch makes them smaller here, it overwrites the stack.
+static_assert(sizeof(DeviceInfo) == 100, "uwb::DeviceInfo must match the archive (UWBFTR_CCC)");
+static_assert(sizeof(DeviceCapabilities) == 68, "uwb::DeviceCapabilities must match the archive (UWBIOT_UWBD_SR1XXT_SR2XXT)");
 
 typedef struct RangingParams_t {
     uint8_t device_role;              // Role of device (controller/controlee)
